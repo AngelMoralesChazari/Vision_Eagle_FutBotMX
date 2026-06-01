@@ -1,16 +1,24 @@
-# This is a sample Python script.
+import cv2
+import supervision as sv
+from ultralytics import SAM
 
-# Press Ctrl+F5 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+print("Cargando")
 
+model = SAM("sam_b.pt")
+video_path = "/content/video-893_singular_display.mov"
+output_video_path = "/content/partido_segmentado.mp4"
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press F9 to toggle the breakpoint.
+video_info = sv.VideoInfo.from_video_path(video_path = video_path)
+mask_annotator = sv.MaskAnnotator()
 
+print(f"Procesando video ({video_info.width}x{video_info.height} a {video_info.fps}")
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+with sv.VideoSink(target_path = output_video_path, video_info = video_info) as sink:
+    for frma in sv.get_video_frames_generator(source_path=video_path):
+        result = model(frame, conf=0.25, verbose=False)[0]
+        detetions = sv.Detections.from_ultralytics(result)
+        annoted_frame = mask_annotator.annotate(scene = frame, detections = detections)
+        sink.write_frame(frame = annoted_frame)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+print(f"\nVideo Procesado")
+print(f"El video completo en: {output_video_path}")
